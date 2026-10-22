@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pilulier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2f8; --surface: #ffffff; --ink: #2a2438; --muted: #6b6478; --line: #d9d4e3;
+  --accent: #5b3f8c; --on-accent: #ffffff;
+  --ok: #2f6f5a; --ok-bg: #dcefe7;
+  --rappel: #8a5a00; --rappel-bg: #fbe9c2;
+  --alarme: #a3293a; --alarme-bg: #f8d9dd;
+  --off: #5b5668; --off-bg: #e4e1ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17141f; --surface: #211d2b; --ink: #ece8f4; --muted: #a39cb3; --line: #3a3449;
+    --accent: #b99cf0; --on-accent: #17141f;
+    --ok: #8fd3b6; --ok-bg: #1f3a30;
+    --rappel: #f0c36a; --rappel-bg: #3d3015;
+    --alarme: #ff9aa8; --alarme-bg: #47202a;
+    --off: #c2bdd0; --off-bg: #2c2838;
+  }
+}
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 1.0625rem/1.5 "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 .25rem; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; }
+.note { color: var(--muted); font-size: .95rem; margin: 0 0 1.5rem; max-width: 60ch; }
+label { display: block; font-size: .95rem; color: var(--muted); margin: .85rem 0 .25rem; }
+input[type="text"], input[type="password"], input[type="time"], textarea {
+  width: 100%; min-height: 2.75rem; padding: .55rem .75rem; font: inherit; color: var(--ink);
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: .5rem;
+}
+textarea { min-height: 7rem; font-size: .9rem; }
+button {
+  min-height: 2.75rem; padding: .55rem 1rem; font: inherit; font-weight: 700; cursor: pointer;
+  border-radius: .5rem; border: 1.5px solid var(--accent); background: var(--accent); color: var(--on-accent);
+}
+button.second { background: transparent; color: var(--accent); }
+button.wide { width: 100%; margin-top: 1rem; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#etat { padding: 1.1rem 1.25rem; border-left: 8px solid var(--off); background: var(--off-bg); border-radius: .25rem .75rem .75rem .25rem; }
+#etat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+#etat span { color: var(--ink); }
+#etat.ok { border-color: var(--ok); background: var(--ok-bg); }
+#etat.rappel { border-color: var(--rappel); background: var(--rappel-bg); }
+#etat.alarme { border-color: var(--alarme); background: var(--alarme-bg); }
+
+#alerte { margin-top: .75rem; padding: .75rem 1rem; border: 1.5px solid var(--alarme); color: var(--alarme); border-radius: .5rem; font-weight: 700; }
+#env { margin: .75rem 0 0; color: var(--muted); }
+#env.warn { color: var(--alarme); font-weight: 700; }
+
+.slot { padding: .9rem 0; border-bottom: 1.5px solid var(--line); }
+.slot:first-child { border-top: 1.5px solid var(--line); }
+.slot-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.slot-head b { font-size: 1.1rem; }
+.chip { font-size: .9rem; font-weight: 700; padding: .1rem .6rem; border-radius: 1rem; background: var(--off-bg); color: var(--off); }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+.chip.rappel { background: var(--rappel-bg); color: var(--rappel); }
+.chip.alarme { background: var(--alarme-bg); color: var(--alarme); }
+.slot-fields { display: grid; grid-template-columns: 7.5rem 1fr; gap: .5rem; margin-top: .5rem; }
+.slot-on { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; color: var(--ink); }
+.slot-on input { width: 1.25rem; height: 1.25rem; accent-color: var(--accent); }
+
+.actions { display: grid; gap: .6rem; margin-top: 1rem; }
+#log { list-style: none; padding: 0; margin: 0; font-size: .95rem; }
+#log li { padding: .4rem 0; border-bottom: 1px solid var(--line); }
+#log time { color: var(--muted); display: block; font-size: .85rem; }
+#msg { margin-top: 1rem; min-height: 1.5rem; color: var(--muted); }
+#msg.err { color: var(--alarme); font-weight: 700; }
+#jres { font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pilulier</h1>
+  <p class="note">Aide-mémoire : ce n'est pas un dispositif médical. Suis toujours la prescription de ton médecin.</p>
+
+  <section id="login">
+    <label for="host">Adresse du broker</label>
+    <input id="host" type="text" placeholder="xxxx.emqxsl.com" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label for="user">Compte MQTT</label>
+    <input id="user" type="text" placeholder="telephone" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label for="pass">Mot de passe MQTT</label>
+    <input id="pass" type="password" autocomplete="off">
+    <label for="key">Clé de commande</label>
+    <input id="key" type="password" autocomplete="off">
+    <button id="go" class="wide">Se connecter</button>
+  </section>
+
+  <section id="app" hidden>
+    <div id="etat" class="off" role="status"><strong id="etatTitre">En attente du pilulier</strong><span id="etatTexte">Aucun message reçu pour le moment.</span></div>
+    <div id="alerte" role="alert" hidden></div>
+    <p id="env">Température et humidité : pas encore de mesure.</p>
+    <p id="hb" class="note" style="margin:.25rem 0 0">Dernier signal de vie : aucun.</p>
+
+    <h2>Prises du jour</h2>
+    <div id="slots"></div>
+    <div class="actions">
+      <button id="sendSched">Envoyer le programme au pilulier</button>
+      <button id="sendTz" class="second">Envoyer l'heure locale</button>
+      <button id="silence" class="second">Couper le rappel sonore</button>
+      <button id="status" class="second">Demander l'état</button>
+    </div>
+
+    <h2>Journal</h2>
+    <ul id="log"></ul>
+
+    <h2>Vérifier le journal</h2>
+    <p class="note">Colle le journal affiché par la commande dump du pilulier, avec la clé du journal. Toute ligne modifiée ou supprimée est détectée.</p>
+    <label for="jtxt">Journal</label>
+    <textarea id="jtxt" spellcheck="false"></textarea>
+    <label for="lkey">Clé du journal</label>
+    <input id="lkey" type="password" autocomplete="off">
+    <button id="jbtn" class="wide">Vérifier le journal</button>
+    <p id="jres"></p>
+
+    <button id="bye" class="second wide">Se déconnecter</button>
+  </section>
+
+  <p id="msg" aria-live="polite"></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+/* crypto:start */
+// Signature HMAC-SHA256, identique à celle que recalcule l'ESP32.
+async function hmacHex(secret, msg) {
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const s = await crypto.subtle.sign('HMAC', k, enc.encode(msg));
+  return [...new Uint8Array(s)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Chaque ligne du journal contient la signature de la précédente.
+async function verifyChain(text, key) {
+  let prev = null;
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (!lines.length) return 'Colle d\'abord le journal.';
+  for (const line of lines) {
+    let j;
+    try { j = JSON.parse(line); } catch { return '⚠️ Une ligne est illisible.'; }
+    const mac = (await hmacHex(key, `${j.i}|${j.t}|${j.ev}|${j.d}|${j.p}`)).slice(0, 16);
+    if (mac !== j.m) return `⚠️ La ligne ${j.i} a été modifiée.`;
+    if (prev && (j.p !== prev.m || j.i !== prev.i + 1)) return `⚠️ La chaîne est rompue avant la ligne ${j.i}.`;
+    prev = j;
+  }
+  return '✅ Journal intact.';
+}
+/* crypto:end */
+
+const PORT = 8084;                       // WebSocket sécurisé d'EMQX
+const SLOTS = ['MATIN', 'MIDI', 'SOIR', 'COUCHER'];
+const LABELS = { MATIN: 'Matin', MIDI: 'Midi', SOIR: 'Soir', COUCHER: 'Coucher' };
+const DEFAULT_TIMES = { MATIN: '08:00', MIDI: '13:00', SOIR: '20:00', COUCHER: '22:30' };
+
+const ETATS = {
+  PROTEGE:    ['Verrouillé', 'Tout est en ordre.', 'ok'],
+  RAPPEL:     ["C'est l'heure d'une prise", 'Présente ton badge au pilulier.', 'rappel'],
+  ALARME:     ['Alarme', 'Une ouverture sans badge a été détectée.', 'alarme'],
+  BLOCAGE:    ['Pilulier bloqué', 'Trop de badges refusés. Nouvelle tentative possible dans une minute.', 'alarme'],
+  HORS_LIGNE: ['Pilulier hors ligne', "Il n'envoie plus de messages. Vérifie son alimentation et le Wi-Fi.", 'off']
+};
+const CHIPS = {
+  RAPPEL: ['À prendre', 'rappel'],
+  PRISE_VALIDEE: ['Prise', 'ok'],
+  PRISE_MANQUEE: ['Manquée', 'alarme']
+};
+const ALERTES = {
+  PRISE_MANQUEE: 'Prise manquée',
+  OUVERTURE_FORCEE: 'Ouverture forcée',
+  CLONE_OU_REJEU_DETECTE: 'Badge copié détecté',
+  HUMIDITE_ELEVEE: "Humidité trop élevée dans la boîte",
+  TEMPERATURE_ELEVEE: 'Température trop élevée dans la boîte',
+  CMD_SIGNATURE_FAUSSE: 'Commande refusée : signature fausse',
+  CMD_REJEU_REFUSE: 'Commande refusée : message déjà utilisé',
+  CMD_PERIMEE: 'Commande refusée : message trop ancien'
+};
+
+let client = null, KEY = '', lastHb = 0, lastNonce = 0;
+const $ = id => document.getElementById(id);
+const rows = {};
+
+function say(text, isError) { const m = $('msg'); m.textContent = text; m.className = isError ? 'err' : ''; }
+
+// ----- Les 4 créneaux du jour (programmation) -----
+function buildSlots() {
+  const box = $('slots');
+  SLOTS.forEach(s => {
+    const wrap = document.createElement('div'); wrap.className = 'slot';
+    const head = document.createElement('div'); head.className = 'slot-head';
+    const title = document.createElement('b'); title.textContent = LABELS[s];
+    const chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = 'Planifiée';
+    head.append(title, chip);
+
+    const fields = document.createElement('div'); fields.className = 'slot-fields';
+    const time = document.createElement('input'); time.type = 'time'; time.value = DEFAULT_TIMES[s];
+    time.setAttribute('aria-label', `Heure de la prise du ${LABELS[s].toLowerCase()}`);
+    const name = document.createElement('input'); name.type = 'text'; name.maxLength = 16;
+    name.placeholder = 'Nom court (16 caractères)';
+    name.setAttribute('aria-label', `Nom de la prise du ${LABELS[s].toLowerCase()}`);
+    fields.append(time, name);
+
+    const onLabel = document.createElement('label'); onLabel.className = 'slot-on';
+    const on = document.createElement('input'); on.type = 'checkbox'; on.checked = true;
+    onLabel.append(on, document.createTextNode(' Prise activée'));
+
+    wrap.append(head, fields, onLabel);
+    box.append(wrap);
+    rows[s] = { time, name, on, chip };
+  });
+}
+
+// Format envoyé : HH:MM,Nom;HH:MM,Nom;HH:MM,Nom;HH:MM,Nom   (créneau désactivé : --:--,)
+function buildSchedule() {
+  return SLOTS.map(s => {
+    const r = rows[s];
+    const ok = r.on.checked && /^\d\d:\d\d$/.test(r.time.value);
+    const name = r.name.value.replace(/[;,|]/g, ' ').trim().slice(0, 16);
+    return ok ? `${r.time.value},${name}` : '--:--,';
+  }).join(';');
+}
+
+// ----- Envoi d'une commande signée -----
+// Message signé : cmd|nonce   ou   cmd|nonce|data
+async function send(cmd, data) {
+  if (!client || !client.connected) { say('Pas de connexion au broker.', true); return; }
+  const nonce = Math.max(Date.now(), lastNonce + 1); lastNonce = nonce;
+  const msg = data === undefined ? `${cmd}|${nonce}` : `${cmd}|${nonce}|${data}`;
+  const sig = await hmacHex(KEY, msg);
+  const body = data === undefined ? { cmd, nonce, sig } : { cmd, nonce, data, sig };
+  client.publish('pilulier/cmd', JSON.stringify(body), { qos: 1 });
+}
+
+// ----- Réception -----
+function setEtat(code) {
+  const e = ETATS[code] || [code, '', 'off'];
+  $('etat').className = e[2];
+  $('etatTitre').textContent = e[0];
+  $('etatTexte').textContent = e[1];
+}
+function showAlert(text) { const a = $('alerte'); a.textContent = text; a.hidden = false; }
+
+function onMessage(topic, payload) {
+  const txt = payload.toString();
+  if (topic === 'pilulier/etat') setEtat(txt);
+  else if (topic === 'pilulier/env') {
+    try {
+      const e = JSON.parse(txt);
+      const env = $('env');
+      env.textContent = `Dans la boîte : ${e.t} °C, ${e.h} % d'humidité.`;
+      env.className = (e.h > 60 || e.t > 30) ? 'warn' : '';
+    } catch { /* message ignoré */ }
+  } else if (topic === 'pilulier/heartbeat') {
+    lastHb = Date.now();
+    $('hb').textContent = 'Dernier signal de vie : ' + new Date().toLocaleTimeString();
+  } else if (topic === 'pilulier/journal') {
+    let j; try { j = JSON.parse(txt); } catch { return; }
+    const li = document.createElement('li');
+    const label = document.createElement('span');
+    label.textContent = `${j.ev}${j.d ? ' (' + (LABELS[j.d] || j.d).toLowerCase() + ')' : ''}`;
+    const time = document.createElement('time'); time.textContent = j.t;
+    li.append(label, time);
+    $('log').prepend(li);
+    if (rows[j.d] && CHIPS[j.ev]) {
+      rows[j.d].chip.textContent = CHIPS[j.ev][0];
+      rows[j.d].chip.className = 'chip ' + CHIPS[j.ev][1];
+    }
+    if (ALERTES[j.ev]) showAlert(`${ALERTES[j.ev]}${rows[j.d] ? ' (' + LABELS[j.d].toLowerCase() + ')' : ''}, ${j.t}`);
+  }
+}
+
+// ----- Connexion -----
+function connect() {
+  if (!window.crypto || !crypto.subtle) {
+    say("Le chiffrement du navigateur n'est pas disponible ici. Ouvre la page depuis son adresse GitHub Pages (https).", true); return;
+  }
+  const host = $('host').value.trim().replace(/^[a-z]+:\/\//i, '').replace(/\/.*$/, '');
+  const user = $('user').value.trim(), pass = $('pass').value, key = $('key').value;
+  if (!host || !user || !pass || !key) { say('Remplis les quatre champs.', true); return; }
+  KEY = key;
+  say('Connexion en cours…');
+  client = mqtt.connect(`wss://${host}:${PORT}/mqtt`, { username: user, password: pass, reconnectPeriod: 3000, connectTimeout: 10000 });
+  client.on('connect', () => {
+    $('login').hidden = true; $('app').hidden = false;
+    $('pass').value = ''; $('key').value = '';         // on n'en garde pas de copie dans la page
+    client.subscribe('pilulier/#');
+    say('Connecté.');
+  });
+  client.on('reconnect', () => say('Connexion perdue. Nouvelle tentative…', true));
+  client.on('error', e => say('Connexion impossible : ' + e.message, true));
+  client.on('message', onMessage);
+}
+
+function disconnect() {
+  if (client) client.end(true);
+  client = null; KEY = '';
+  $('app').hidden = true; $('login').hidden = false;
+  say('Déconnectée.');
+}
+
+buildSlots();
+$('go').onclick = connect;
+$('bye').onclick = disconnect;
+$('sendSched').onclick = async () => { await send('sched', buildSchedule()); say("Programme envoyé. L'écran du pilulier doit afficher « Programme mis à jour »."); };
+$('sendTz').onclick = async () => { await send('tz', String(-new Date().getTimezoneOffset())); say('Heure locale envoyée.'); };
+$('silence').onclick = () => send('silence');
+$('status').onclick = () => send('status');
+$('jbtn').onclick = async () => { $('jres').textContent = await verifyChain($('jtxt').value, $('lkey').value); };
+
+setInterval(() => {
+  if (lastHb && Date.now() - lastHb > 150000) $('hb').textContent = '⚠️ Plus de signal de vie depuis ' + Math.round((Date.now() - lastHb) / 60000) + ' min.';
+}, 10000);
+</script>
+</body>
+</html>
